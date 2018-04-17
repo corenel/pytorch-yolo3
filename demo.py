@@ -15,7 +15,7 @@ def demo(cfgfile, weightfile):
     else:
         namesfile = 'data/names'
     class_names = load_class_names(namesfile)
- 
+
     use_cuda = 1
     if use_cuda:
         m.cuda()
@@ -36,7 +36,7 @@ def demo(cfgfile, weightfile):
             cv2.waitKey(1)
         else:
              print("Unable to read image")
-             exit(-1) 
+             exit(-1)
 
 ############################################
 if __name__ == '__main__':

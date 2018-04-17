@@ -48,7 +48,7 @@ def eval_list(cfgfile, weightfile, imglist):
             savename = "tmp/%06d.jpg" % (lineId)
             print("save %s" % savename)
             plot_boxes(img, boxes, savename)
-        
+
         total = total + truths.shape[0]
 
         for i in range(len(boxes)):

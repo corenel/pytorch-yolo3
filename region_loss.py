@@ -4,7 +4,7 @@ import math
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
-from utils import *
+from .utils import *
 
 def build_targets(pred_boxes, target, anchors, num_anchors, num_classes, nH, nW, noobject_scale, object_scale, sil_thresh, seen):
     nB = target.size(0)
@@ -14,12 +14,12 @@ def build_targets(pred_boxes, target, anchors, num_anchors, num_classes, nH, nW,
     conf_mask  = torch.ones(nB, nA, nH, nW) * noobject_scale
     coord_mask = torch.zeros(nB, nA, nH, nW)
     cls_mask   = torch.zeros(nB, nA, nH, nW)
-    tx         = torch.zeros(nB, nA, nH, nW) 
-    ty         = torch.zeros(nB, nA, nH, nW) 
-    tw         = torch.zeros(nB, nA, nH, nW) 
-    th         = torch.zeros(nB, nA, nH, nW) 
+    tx         = torch.zeros(nB, nA, nH, nW)
+    ty         = torch.zeros(nB, nA, nH, nW)
+    tw         = torch.zeros(nB, nA, nH, nW)
+    th         = torch.zeros(nB, nA, nH, nW)
     tconf      = torch.zeros(nB, nA, nH, nW)
-    tcls       = torch.zeros(nB, nA, nH, nW) 
+    tcls       = torch.zeros(nB, nA, nH, nW)
 
     nAnchors = nA*nH*nW
     nPixels  = nH*nW
@@ -161,7 +161,7 @@ class RegionLoss(nn.Module):
         coord_mask = Variable(coord_mask.cuda())
         conf_mask  = Variable(conf_mask.cuda().sqrt())
         cls_mask   = Variable(cls_mask.view(-1, 1).repeat(1,nC).cuda())
-        cls        = cls[cls_mask].view(-1, nC)  
+        cls        = cls[cls_mask].view(-1, nC)
 
         t3 = time.time()
 

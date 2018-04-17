@@ -14,12 +14,12 @@ def build_targets(pred_boxes, target, anchors, num_anchors, num_classes, nH, nW,
     conf_mask  = torch.ones(nB, nA, nH, nW) * noobject_scale
     coord_mask = torch.zeros(nB, nA, nH, nW)
     cls_mask   = torch.zeros(nB, nA, nH, nW)
-    tx         = torch.zeros(nB, nA, nH, nW) 
-    ty         = torch.zeros(nB, nA, nH, nW) 
-    tw         = torch.zeros(nB, nA, nH, nW) 
-    th         = torch.zeros(nB, nA, nH, nW) 
+    tx         = torch.zeros(nB, nA, nH, nW)
+    ty         = torch.zeros(nB, nA, nH, nW)
+    tw         = torch.zeros(nB, nA, nH, nW)
+    th         = torch.zeros(nB, nA, nH, nW)
     tconf      = torch.zeros(nB, nA, nH, nW)
-    tcls       = torch.zeros(nB, nA, nH, nW) 
+    tcls       = torch.zeros(nB, nA, nH, nW)
 
     nAnchors = nA*nH*nW
     nPixels  = nH*nW
@@ -124,7 +124,7 @@ class YoloLayer(nn.Module):
             nC = self.num_classes
             nH = output.data.size(2)
             nW = output.data.size(3)
-    
+
             output   = output.view(nB, nA, (5+nC), nH, nW)
             x    = F.sigmoid(output.index_select(2, Variable(torch.cuda.LongTensor([0]))).view(nB, nA, nH, nW))
             y    = F.sigmoid(output.index_select(2, Variable(torch.cuda.LongTensor([1]))).view(nB, nA, nH, nW))
@@ -134,7 +134,7 @@ class YoloLayer(nn.Module):
             cls  = output.index_select(2, Variable(torch.linspace(5,5+nC-1,nC).long().cuda()))
             cls  = cls.view(nB*nA, nC, nH*nW).transpose(1,2).contiguous().view(nB*nA*nH*nW, nC)
             t1 = time.time()
-    
+
             pred_boxes = torch.cuda.FloatTensor(4, nB*nA*nH*nW)
             grid_x = torch.linspace(0, nW-1, nW).repeat(nH,1).repeat(nB*nA, 1, 1).view(nB*nA*nH*nW).cuda()
             grid_y = torch.linspace(0, nH-1, nH).repeat(nW,1).t().repeat(nB*nA, 1, 1).view(nB*nA*nH*nW).cuda()
@@ -148,26 +148,26 @@ class YoloLayer(nn.Module):
             pred_boxes[3] = torch.exp(h.data) * anchor_h
             pred_boxes = convert2cpu(pred_boxes.transpose(0,1).contiguous().view(-1,4))
             t2 = time.time()
-    
+
             nGT, nCorrect, coord_mask, conf_mask, cls_mask, tx, ty, tw, th, tconf,tcls = build_targets(pred_boxes, target.data, self.anchors, nA, nC, \
                                                                    nH, nW, self.noobject_scale, self.object_scale, self.thresh, self.seen)
             cls_mask = (cls_mask == 1)
             nProposals = int((conf > 0.25).sum().data[0])
-    
+
             tx    = Variable(tx.cuda())
             ty    = Variable(ty.cuda())
             tw    = Variable(tw.cuda())
             th    = Variable(th.cuda())
             tconf = Variable(tconf.cuda())
             tcls  = Variable(tcls.view(-1)[cls_mask].long().cuda())
-    
+
             coord_mask = Variable(coord_mask.cuda())
             conf_mask  = Variable(conf_mask.cuda().sqrt())
             cls_mask   = Variable(cls_mask.view(-1, 1).repeat(1,nC).cuda())
-            cls        = cls[cls_mask].view(-1, nC)  
-    
+            cls        = cls[cls_mask].view(-1, nC)
+
             t3 = time.time()
-    
+
             loss_x = self.coord_scale * nn.MSELoss(size_average=False)(x*coord_mask, tx*coord_mask)/2.0
             loss_y = self.coord_scale * nn.MSELoss(size_average=False)(y*coord_mask, ty*coord_mask)/2.0
             loss_w = self.coord_scale * nn.MSELoss(size_average=False)(w*coord_mask, tw*coord_mask)/2.0

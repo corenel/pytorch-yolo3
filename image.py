@@ -17,7 +17,7 @@ def distort_image(im, hue, sat, val):
     cs = list(im.split())
     cs[1] = cs[1].point(lambda i: i * sat)
     cs[2] = cs[2].point(lambda i: i * val)
-    
+
     def change_hue(x):
         x += hue*255
         if x > 255:
@@ -34,7 +34,7 @@ def distort_image(im, hue, sat, val):
 
 def rand_scale(s):
     scale = random.uniform(1, s)
-    if(random.randint(1,10000)%2): 
+    if(random.randint(1,10000)%2):
         return scale
     return 1./scale
 
@@ -46,9 +46,9 @@ def random_distort_image(im, hue, saturation, exposure):
     return res
 
 def data_augmentation(img, shape, jitter, hue, saturation, exposure):
-    oh = img.height  
+    oh = img.height
     ow = img.width
-    
+
     dw =int(ow*jitter)
     dh =int(oh*jitter)
 
@@ -62,7 +62,7 @@ def data_augmentation(img, shape, jitter, hue, saturation, exposure):
 
     sx = float(swidth)  / ow
     sy = float(sheight) / oh
-    
+
     flip = random.randint(1,10000)%2
     cropped = img.crop( (pleft, ptop, pleft + swidth - 1, ptop + sheight - 1))
 
@@ -71,11 +71,11 @@ def data_augmentation(img, shape, jitter, hue, saturation, exposure):
 
     sized = cropped.resize(shape)
 
-    if flip: 
+    if flip:
         sized = sized.transpose(Image.FLIP_LEFT_RIGHT)
     img = random_distort_image(sized, hue, saturation, exposure)
-    
-    return img, flip, dx,dy,sx,sy 
+
+    return img, flip, dx,dy,sx,sy
 
 def fill_truth_detection(labpath, w, h, flip, dx, dy, sx, sy):
     max_boxes = 50
@@ -91,20 +91,20 @@ def fill_truth_detection(labpath, w, h, flip, dx, dy, sx, sy):
             y1 = bs[i][2] - bs[i][4]/2
             x2 = bs[i][1] + bs[i][3]/2
             y2 = bs[i][2] + bs[i][4]/2
-            
-            x1 = min(0.999, max(0, x1 * sx - dx)) 
-            y1 = min(0.999, max(0, y1 * sy - dy)) 
+
+            x1 = min(0.999, max(0, x1 * sx - dx))
+            y1 = min(0.999, max(0, y1 * sy - dy))
             x2 = min(0.999, max(0, x2 * sx - dx))
             y2 = min(0.999, max(0, y2 * sy - dy))
-            
+
             bs[i][1] = (x1 + x2)/2
             bs[i][2] = (y1 + y2)/2
             bs[i][3] = (x2 - x1)
             bs[i][4] = (y2 - y1)
 
             if flip:
-                bs[i][1] =  0.999 - bs[i][1] 
-            
+                bs[i][1] =  0.999 - bs[i][1]
+
             if bs[i][3] < 0.001 or bs[i][4] < 0.001:
                 continue
             label[cc] = bs[i]
