@@ -1,3 +1,4 @@
+from __future__ import division
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -297,7 +298,7 @@ class Darknet(nn.Module):
                 yolo_layer.anchors = [float(i) for i in anchors]
                 yolo_layer.num_classes = int(block['classes'])
                 yolo_layer.num_anchors = int(block['num'])
-                yolo_layer.anchor_step = len(yolo_layer.anchors)/yolo_layer.num_anchors
+                yolo_layer.anchor_step = len(yolo_layer.anchors)//yolo_layer.num_anchors
                 yolo_layer.stride = prev_stride
                 #yolo_layer.object_scale = float(block['object_scale'])
                 #yolo_layer.noobject_scale = float(block['noobject_scale'])
