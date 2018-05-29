@@ -6,6 +6,7 @@ import torch
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 from torch.autograd import Variable
+from torchvision import transforms
 
 import itertools
 import struct # get_image_size
@@ -322,16 +323,18 @@ def do_detect(model, img, conf_thresh, nms_thresh, use_cuda=1):
         img = img.view(1, 3, height, width)
         img = img.float().div(255.0)
     elif type(img) == np.ndarray: # cv2 image
-        img = torch.from_numpy(img.transpose(2,0,1)).float().div(255.0).unsqueeze(0)
+        # img = transforms.ToTensor()(img).unsqueeze(0)
+        img = img.astype(np.float32)/255.
+        img = torch.from_numpy(img.transpose(2,0,1)).unsqueeze(0)
     else:
         print("unknow image type")
         exit(-1)
 
     t1 = time.time()
 
+    img = torch.autograd.Variable(img, volatile=True)
     if use_cuda:
         img = img.cuda()
-    img = torch.autograd.Variable(img)
     t2 = time.time()
 
     list_boxes = model(img)
@@ -349,6 +352,7 @@ def do_detect(model, img, conf_thresh, nms_thresh, use_cuda=1):
         print('             nms : %f' % (t4 - t3))
         print('           total : %f' % (t4 - t0))
         print('-----------------------------------')
+
     return boxes
 
 def read_data_cfg(datacfg):
