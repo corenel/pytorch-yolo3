@@ -70,14 +70,15 @@ def valid(datacfg, cfgfile, weightfile, outfile):
             print(valid_files[lineId])
             boxes = batch_boxes[0][i] + batch_boxes[1][i] + batch_boxes[2][i]
             boxes = nms(boxes, nms_thresh)
-            for box in boxes:
-                x1 = (box[0] - box[2]/2.0) * width
-                y1 = (box[1] - box[3]/2.0) * height
-                x2 = (box[0] + box[2]/2.0) * width
-                y2 = (box[1] + box[3]/2.0) * height
 
-                det_conf = box[4]
-                with open('results/predicted/%s.txt' % fileId, 'w') as f:
+            with open('results/predicted/%s.txt' % fileId, 'w') as f:
+                for box in boxes:
+                    x1 = (box[0] - box[2]/2.0) * width
+                    y1 = (box[1] - box[3]/2.0) * height
+                    x2 = (box[0] + box[2]/2.0) * width
+                    y2 = (box[1] + box[3]/2.0) * height
+
+                    det_conf = box[4]
                     for j in range((len(box)-5)/2):
                         cls_conf = box[5+2*j]
                         cls_id = box[6+2*j]
