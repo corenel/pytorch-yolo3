@@ -6,3 +6,7 @@
 *.o
 *.so
 backup/
+cfg/infrared.cfg
+cfg/infrared.data
+data/infrared.names
+results/

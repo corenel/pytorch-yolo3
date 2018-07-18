@@ -16,12 +16,15 @@ def valid(datacfg, cfgfile, weightfile, outfile):
     with open(valid_images) as fp:
         tmp_files = fp.readlines()
         valid_files = [item.rstrip() for item in tmp_files]
-    
+
     m = Darknet(cfgfile)
     m.print_network()
     m.load_weights(weightfile)
     m.cuda()
     m.eval()
+    # FIXME modify number of classes
+    num_classes = 1
+    min_box_scale = 8. / m.width
 
     valid_dataset = dataset.listDataset(valid_images, shape=(m.width, m.height),
                        shuffle=False,
@@ -33,30 +36,39 @@ def valid(datacfg, cfgfile, weightfile, outfile):
 
     kwargs = {'num_workers': 4, 'pin_memory': True}
     valid_loader = torch.utils.data.DataLoader(
-        valid_dataset, batch_size=valid_batchsize, shuffle=False, **kwargs) 
+        valid_dataset, batch_size=valid_batchsize, shuffle=False, **kwargs)
 
-    fps = [0]*m.num_classes
+    fps = [0]*num_classes
+    gts = [0]*num_classes
     if not os.path.exists('results'):
         os.mkdir('results')
-    for i in range(m.num_classes):
+    if not os.path.exists('results/predicted'):
+        os.mkdir('results/predicted')
+    if not os.path.exists('results/ground-truth'):
+        os.mkdir('results/ground-truth')
+    for i in range(num_classes):
         buf = '%s/%s%s.txt' % (prefix, outfile, names[i])
         fps[i] = open(buf, 'w')
-   
+        gtbuf = '%s/%s%s_gt.txt' % (prefix, outfile, names[i])
+        gts[i] = open(gtbuf, 'w')
+
     lineId = -1
-    
+
     conf_thresh = 0.005
     nms_thresh = 0.45
     for batch_idx, (data, target) in enumerate(valid_loader):
         data = data.cuda()
         data = Variable(data, volatile = True)
-        output = m(data).data
-        batch_boxes = get_region_boxes(output, conf_thresh, m.num_classes, m.anchors, m.num_anchors, 0, 1)
-        for i in range(output.size(0)):
+        output = m(data)
+        batch_boxes = output
+        for i in range(int(data.shape[0])):
             lineId = lineId + 1
             fileId = os.path.basename(valid_files[lineId]).split('.')[0]
-            width, height = get_image_size(valid_files[lineId])
+            # FIXME modify image size
+            # width, height = get_image_size(valid_files[lineId])
+            width, height = 960, 576
             print(valid_files[lineId])
-            boxes = batch_boxes[i]
+            boxes = batch_boxes[0][i] + batch_boxes[1][i] + batch_boxes[2][i]
             boxes = nms(boxes, nms_thresh)
             for box in boxes:
                 x1 = (box[0] - box[2]/2.0) * width
@@ -65,13 +77,28 @@ def valid(datacfg, cfgfile, weightfile, outfile):
                 y2 = (box[1] + box[3]/2.0) * height
 
                 det_conf = box[4]
-                for j in range((len(box)-5)/2):
-                    cls_conf = box[5+2*j]
-                    cls_id = box[6+2*j]
-                    prob =det_conf * cls_conf
-                    fps[cls_id].write('%s %f %f %f %f %f\n' % (fileId, prob, x1, y1, x2, y2))
+                with open('results/predicted/%s.txt' % fileId, 'w') as f:
+                    for j in range((len(box)-5)/2):
+                        cls_conf = box[5+2*j]
+                        cls_id = box[6+2*j]
+                        prob =det_conf * cls_conf
+                        f.write('%s %f %d %d %d %d\n' % (names[cls_id], prob, x1, y1, x2, y2))
 
-    for i in range(m.num_classes):
+            img_path = valid_files[lineId]
+            lab_path = img_path.replace('images', 'labels')
+            lab_path = lab_path.replace('JPEGImages', 'labels')
+            lab_path = lab_path.replace('.jpg', '.txt').replace('.png', '.txt')
+            truths = read_truths_args(lab_path, min_box_scale)
+
+            with open('results/ground-truth/%s.txt' % fileId, 'w') as f:
+                for truth in truths:
+                    x1 = (truth[1] - truth[3]/2.0) * width
+                    y1 = (truth[2] - truth[4]/2.0) * height
+                    x2 = (truth[1] + truth[3]/2.0) * width
+                    y2 = (truth[2] + truth[4]/2.0) * height
+                    f.write('%s %d %d %d %d\n' % (names[int(truth[0])], x1, y1, x2, y2))
+
+    for i in range(num_classes):
         fps[i].close()
 
 if __name__ == '__main__':
